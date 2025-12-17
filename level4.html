@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kevin's Trap Maze</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #c62828, #b71c1c, #880e4f);
+            color: #ffffff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 15px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/fone4.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.9;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 95%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            position: relative;
+        }
+
+        /* Блок трэпов — оставляем как есть */
+        .gifts-container {
+            background: linear-gradient(135deg, #880e4f, #4a148c);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+            text-align: center;
+            border: 2px solid #ffd700;
+        }
+
+        .gifts-label {
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #ffd700;
+            font-size: 1.2rem;
+        }
+
+        .gifts-icons {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            font-size: 24px;
+        }
+
+        .gift-icon {
+            opacity: 0.3;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+            cursor: default;
+            filter: drop-shadow(0 0 3px rgba(255, 215, 0, 0.5));
+        }
+
+        .gift-icon.collected {
+            opacity: 1;
+            transform: scale(1.1);
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% {transform: translateY(0);}
+            40% {transform: translateY(-10px);}
+            60% {transform: translateY(-5px);}
+        }
+
+        /* Лабиринт — компактный, с фиксированным размером 500x500 */
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            aspect-ratio: 1;
+            margin: 0 auto;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1b5e20, #0d47a1);
+            border-radius: 12px;
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.6);
+            border: 3px solid #ffd700;
+            display: block;
+        }
+
+        /* Кнопка звука — маленькая иконка в правом верхнем углу */
+        .audio-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid #ffd700;
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+
+        .audio-btn:hover {
+            background: rgba(255, 215, 0, 0.3);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.85);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #880e4f, #4a148c);
+            padding: 25px;
+            border-radius: 16px;
+            max-width: 550px;
+            width: 90%;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7);
+            text-align: center;
+            border: 3px solid #ffd700;
+        }
+
+        .modal h2 {
+            margin-bottom: 15px;
+            color: #ffd700;
+            font-size: 1.6rem;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        .quiz-question {
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            color: #ffffff;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .quiz-option {
+            padding: 12px;
+            background: linear-gradient(135deg, #c62828, #880e4f);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid #ffd700;
+        }
+
+        .quiz-option:hover {
+            background: linear-gradient(135deg, #d32f2f, #9c27b0);
+            transform: scale(1.02);
+        }
+
+        .victory-message {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            color: #4caf50;
+            font-weight: bold;
+            text-shadow: 0 0 15px rgba(76, 175, 80, 0.6);
+        }
+
+        .victory-stats {
+            margin-top: 15px;
+            text-align: left;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 10px;
+        }
+
+        .victory-stats div {
+            margin: 8px 0;
+            font-size: 1rem;
+        }
+
+        @media (max-width: 600px) {
+            .gifts-icons {
+                gap: 5px;
+                font-size: 20px;
+            }
+            .canvas-container {
+                max-width: 100%;
+            }
+            .audio-btn {
+                top: 5px;
+                right: 5px;
+                padding: 5px 8px;
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Блок трэпов — не трогаем -->
+    <div class="container">
+        <div class="gifts-container">
+            <div class="gifts-icons" id="gifts-icons"></div>
+        </div>
+
+        <!-- Лабиринт -->
+        <div class="canvas-container">
+            <canvas id="mazeCanvas" width="500" height="500"></canvas>
+        </div>
+
+        <!-- Маленькая иконка звука в правом верхнем углу -->
+        <button class="audio-btn" id="musicBtn">🔊</button>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div class="modal" id="quizModal">
+        <div class="modal-content">
+            <h2>🎄 Set the Traps! 🎯</h2>
+            <div class="quiz-question" id="quizQuestion"></div>
+            <div class="quiz-options" id="quizOptions"></div>
+        </div>
+    </div>
+
+    <!-- Victory Modal -->
+    <div class="modal" id="victoryModal">
+        <div class="modal-content">
+            <div class="victory-message">⭐ Perfect route!</div>
+            <div class="victory-stats" id="victoryStats"></div>
+            <button id="victoryCloseBtn">Deliver Again!</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================
+        // 🔊 ЗВУКИ
+        // ==========================
+        let soundsLoaded = false;
+        const sounds = {
+            background: null,
+            collect: null,
+            wrong: null,
+            victory: null
+        };
+        let backgroundMusicPlaying = true;
+
+        function initAudio() {
+            if (soundsLoaded) return;
+            sounds.background = new Audio('sounds/christmas_evel.mp3');
+            sounds.collect = new Audio('sounds/bell.mp3');
+            sounds.wrong = new Audio('sounds/error.mp3');
+            sounds.victory = new Audio('sounds/win.mp3');
+
+            sounds.background.volume = 0.3;
+            sounds.collect.volume = 0.7;
+            sounds.wrong.volume = 0.7;
+            sounds.victory.volume = 0.8;
+            sounds.background.loop = true;
+
+            soundsLoaded = true;
+            updateMusicButton();
+        }
+
+        function playSound(name) {
+            if (!sounds[name]) return;
+            sounds[name].currentTime = 0;
+            sounds[name].play().catch(() => {});
+        }
+
+        function toggleBackgroundMusic() {
+            backgroundMusicPlaying = !backgroundMusicPlaying;
+            updateMusicButton();
+            if (backgroundMusicPlaying) {
+                sounds.background.play().catch(() => {});
+            } else {
+                sounds.background.pause();
+            }
+        }
+
+        function updateMusicButton() {
+            document.getElementById('musicBtn').textContent = backgroundMusicPlaying ? '🔊' : '🔇';
+        }
+
+        function activateAudio() {
+            if (!soundsLoaded) initAudio();
+        }
+
+        // ==========================
+        // 🎮 ИГРОВАЯ ЛОГИКА
+        // ==========================
+        const MAZE_SIZE = 35;
+        const TOTAL_GIFTS = 15;
+        const ENEMY_COUNT = 10;
+        const ENEMY_MOVE_PROBABILITY = 0.3;
+        const GIFT_EMOJIS = ['🔥', '💣', '💡', '️🧨', '🎱', '💥', '🔌', '🏒', '🌳', '🕷', '⛓️‍💥', '🪚', '🪜', '✂️', '🪟'];
+
+        let maze = [];
+        let player = { x: 1, y: 1 };
+        let gifts = [];
+        let giftIcons = [];
+        let collectedGifts = 0;
+        let exit = null;
+        let enemies = [];
+        let gameActive = true;
+        let currentQuestionIndex = 0;
+
+        const canvas = document.getElementById('mazeCanvas');
+        const ctx = canvas.getContext('2d');
+        const giftsIconsContainer = document.getElementById('gifts-icons');
+        const quizModal = document.getElementById('quizModal');
+        const quizQuestion = document.getElementById('quizQuestion');
+        const quizOptions = document.getElementById('quizOptions');
+        const victoryModal = document.getElementById('victoryModal');
+        const victoryStats = document.getElementById('victoryStats');
+
+        const questions = [
+            ["I _____ a bucket of paint on the stairs.", "spilled", "spill", "spillet", 1],
+            ["The glue _____ on the doorknob last night.", "sticked", "stuck", "stick", 2],
+            ["Santa _____ his sleigh through the snow.", "flyed", "flew", "fly", 2],
+            ["The ornaments _____ off the tree when I jumped.", "fallen", "fell", "fall", 2],
+            ["I _____ a glass of milk for Santa.", "leaved", "left", "leave", 2],
+            ["The tape _____ across the hallway.", "stick", "stuck", "stickked", 2],
+            ["I _____ my brother's toy car as a trap.", "use", "used", "uset", 2],
+            ["The snowballs _____ at the window.", "throwed", "threw", "throw", 2],
+            ["I _____ the lights to scare them.", "set", "setted", "seted", 1],
+            ["The dog _____ at the intruders.", "barked", "bark", "barkked", 1],
+            ["I _____ the doorbell to ring automatically.", "programmed", "program", "programed", 1],
+            ["The tinsel _____ from the ceiling.", "hung", "hang", "hanged", 1],
+            ["I _____ a note for the burglars.", "wrote", "write", "writed", 1],
+            ["The popcorn _____ in the microwave.", "poped", "popped", "pop", 2],
+            ["I _____ the TV to turn on at midnight.", "programed", "program", "programmed", 3],
+            ["The cookies _____ on the plate.", "lay", "laid", "lied", 2],
+            ["I _____ a fake present under the tree.", "put", "putted", "puted", 1],
+            ["The ladder _____ down when they climbed it.", "falled", "fell", "fall", 2],
+            ["I _____ the alarm system to trigger.", "activate", "activated", "activatet", 2]
+        ];
+
+        function initGame() {
+            maze = generateMaze();
+            player = { x: 1, y: 1 };
+            gifts = [];
+            collectedGifts = 0;
+            exit = null;
+            enemies = [];
+            gameActive = true;
+            currentQuestionIndex = 0;
+
+            giftsIconsContainer.innerHTML = '';
+            giftIcons = [];
+            for (let i = 0; i < TOTAL_GIFTS; i++) {
+                const icon = document.createElement('span');
+                icon.className = 'gift-icon';
+                icon.textContent = GIFT_EMOJIS[i];
+                giftsIconsContainer.appendChild(icon);
+                giftIcons.push(icon);
+            }
+
+            placeGifts();
+            render();
+
+            if (backgroundMusicPlaying && soundsLoaded) {
+                sounds.background.play().catch(() => {});
+            }
+        }
+
+        function generateMaze() {
+            const maze = Array(MAZE_SIZE).fill().map(() => Array(MAZE_SIZE).fill(1));
+            const stack = [];
+            let x = 1, y = 1;
+            maze[y][x] = 0;
+            stack.push({x, y});
+
+            const directions = [
+                {dx: 0, dy: -2},
+                {dx: 2, dy: 0},
+                {dx: 0, dy: 2},
+                {dx: -2, dy: 0}
+            ];
+
+            while (stack.length > 0) {
+                const current = stack[stack.length - 1];
+                const neighbors = [];
+                for (const dir of directions) {
+                    const nx = current.x + dir.dx;
+                    const ny = current.y + dir.dy;
+                    if (nx > 0 && nx < MAZE_SIZE - 1 && ny > 0 && ny < MAZE_SIZE - 1 && maze[ny][nx] === 1) {
+                        neighbors.push({x: nx, y: ny, dir: dir});
+                    }
+                }
+                if (neighbors.length > 0) {
+                    const next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    maze[next.y][next.x] = 0;
+                    maze[current.y + next.dir.dy / 2][current.x + next.dir.dx / 2] = 0;
+                    stack.push({x: next.x, y: next.y});
+                } else {
+                    stack.pop();
+                }
+            }
+            return maze;
+        }
+
+        function placeGifts() {
+            gifts = [];
+            const availablePositions = [];
+            for (let y = 1; y < MAZE_SIZE - 1; y += 2) {
+                for (let x = 1; x < MAZE_SIZE - 1; x += 2) {
+                    if (maze[y][x] === 0 && !(x === 1 && y === 1)) {
+                        availablePositions.push({x, y});
+                    }
+                }
+            }
+            shuffleArray(availablePositions);
+            for (let i = 0; i < Math.min(TOTAL_GIFTS, availablePositions.length); i++) {
+                gifts.push({
+                    x: availablePositions[i].x,
+                    y: availablePositions[i].y,
+                    emoji: GIFT_EMOJIS[i]
+                });
+            }
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            const cellSize = canvas.width / MAZE_SIZE;
+
+            ctx.fillStyle = '#c62828';
+            for (let y = 0; y < MAZE_SIZE; y++) {
+                for (let x = 0; x < MAZE_SIZE; x++) {
+                    if (maze[y][x] === 1) {
+                        ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+
+            ctx.font = `${cellSize * 0.9}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (const gift of gifts) {
+                const centerX = (gift.x + 0.5) * cellSize;
+                const centerY = (gift.y + 0.5) * cellSize;
+                ctx.fillText(gift.emoji, centerX, centerY);
+            }
+
+            if (exit) {
+                ctx.font = `${cellSize * 1.2}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                const centerX = (exit.x + 0.5) * cellSize;
+                const centerY = (exit.y + 0.5) * cellSize;
+                ctx.fillText('🏠', centerX, centerY);
+            }
+
+            ctx.font = `${cellSize * 1.0}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            for (const enemy of enemies) {
+                const centerX = (enemy.x + 0.5) * cellSize;
+                const centerY = (enemy.y + 0.5) * cellSize;
+                ctx.fillText('🦸', centerX, centerY);
+            }
+
+            const playerCenterX = (player.x + 0.5) * cellSize;
+            const playerCenterY = (player.y + 0.5) * cellSize;
+            ctx.shadowColor = '#ffd700';
+            ctx.shadowBlur = 20;
+            ctx.font = `${cellSize * 1.4}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('👦', playerCenterX, playerCenterY);
+            ctx.shadowBlur = 0;
+        }
+
+        function movePlayer(dx, dy) {
+            if (!gameActive) return;
+            const newX = player.x + dx;
+            const newY = player.y + dy;
+            if (newX >= 0 && newX < MAZE_SIZE && newY >= 0 && newY < MAZE_SIZE && maze[newY][newX] === 0) {
+                player.x = newX;
+                player.y = newY;
+                checkGiftCollection();
+                checkExit();
+                checkEnemyCollision();
+                render();
+            }
+        }
+
+        function checkGiftCollection() {
+            for (let i = 0; i < gifts.length; i++) {
+                if (gifts[i].x === player.x && gifts[i].y === player.y) {
+                    currentGiftIndex = i;
+                    showQuiz();
+                    return;
+                }
+            }
+        }
+
+        function showQuiz() {
+            const question = questions[currentQuestionIndex];
+            quizQuestion.textContent = question[0];
+            quizOptions.innerHTML = '';
+            for (let i = 1; i <= 3; i++) {
+                const button = document.createElement('button');
+                button.className = 'quiz-option';
+                button.textContent = question[i];
+                button.onclick = () => handleQuizAnswer(i === question[4]);
+                quizOptions.appendChild(button);
+            }
+            quizModal.style.display = 'flex';
+        }
+
+        function handleQuizAnswer(isCorrect) {
+            quizModal.style.display = 'none';
+            if (isCorrect) {
+                playSound('collect');
+                const collectedGift = gifts[currentGiftIndex];
+                gifts.splice(currentGiftIndex, 1);
+                giftIcons[collectedGifts].classList.add('collected');
+                collectedGifts++;
+                currentQuestionIndex++;
+                if (collectedGifts === TOTAL_GIFTS) {
+                    placeExitAndEnemies();
+                }
+            } else {
+                playSound('wrong');
+                const availablePositions = [];
+                for (let y = 1; y < MAZE_SIZE - 1; y += 2) {
+                    for (let x = 1; x < MAZE_SIZE - 1; x += 2) {
+                        if (maze[y][x] === 0 && !isOccupied(x, y)) {
+                            availablePositions.push({x, y});
+                        }
+                    }
+                }
+                if (availablePositions.length > 0) {
+                    const newPosition = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                    gifts[currentGiftIndex] = {
+                        x: newPosition.x,
+                        y: newPosition.y,
+                        emoji: gifts[currentGiftIndex].emoji
+                    };
+                }
+            }
+            render();
+        }
+
+        function isOccupied(x, y) {
+            if (x === player.x && y === player.y) return true;
+            if (exit && x === exit.x && y === exit.y) return true;
+            for (const gift of gifts) {
+                if (gift.x === x && gift.y === y) return true;
+            }
+            for (const enemy of enemies) {
+                if (enemy.x === x && enemy.y === y) return true;
+            }
+            return false;
+        }
+
+        function placeExitAndEnemies() {
+            const availablePositions = [];
+            for (let y = 1; y < MAZE_SIZE - 1; y += 2) {
+                for (let x = 1; x < MAZE_SIZE - 1; x += 2) {
+                    if (maze[y][x] === 0 && !isOccupied(x, y)) {
+                        availablePositions.push({x, y});
+                    }
+                }
+            }
+            if (availablePositions.length > 0) {
+                exit = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+            }
+            enemies = [];
+            const enemyPositions = availablePositions.filter(pos => 
+                !(pos.x === exit.x && pos.y === exit.y) && 
+                !(pos.x === player.x && pos.y === player.y)
+            );
+            shuffleArray(enemyPositions);
+            for (let i = 0; i < Math.min(ENEMY_COUNT, enemyPositions.length); i++) {
+                enemies.push({...enemyPositions[i]});
+            }
+            render();
+        }
+
+        function checkExit() {
+            if (exit && player.x === exit.x && player.y === exit.y) {
+                gameActive = false;
+                playSound('victory');
+                sounds.background.pause();
+                showVictory();
+            }
+        }
+
+        function checkEnemyCollision() {
+            for (const enemy of enemies) {
+                if (enemy.x === player.x && enemy.y === player.y) {
+                    const availablePositions = [];
+                    for (let y = 1; y < MAZE_SIZE - 1; y += 2) {
+                        for (let x = 1; x < MAZE_SIZE - 1; x += 2) {
+                            if (maze[y][x] === 0 && !isOccupied(x, y)) {
+                                availablePositions.push({x, y});
+                            }
+                        }
+                    }
+                    if (availablePositions.length > 0) {
+                        exit = availablePositions[Math.floor(Math.random() * availablePositions.length)];
+                    }
+                    render();
+                    return;
+                }
+            }
+        }
+
+        function moveEnemies() {
+            if (!exit || !gameActive) return;
+            for (const enemy of enemies) {
+                if (Math.random() < ENEMY_MOVE_PROBABILITY) {
+                    const directions = [
+                        {dx: 0, dy: -1},
+                        {dx: 1, dy: 0},
+                        {dx: 0, dy: 1},
+                        {dx: -1, dy: 0}
+                    ];
+                    const validMoves = [];
+                    for (const dir of directions) {
+                        const newX = enemy.x + dir.dx;
+                        const newY = enemy.y + dir.dy;
+                        if (newX >= 0 && newX < MAZE_SIZE && newY >= 0 && newY < MAZE_SIZE && 
+                            maze[newY][newX] === 0 && !isEnemyAt(newX, newY, enemy)) {
+                            validMoves.push(dir);
+                        }
+                    }
+                    if (validMoves.length > 0) {
+                        const move = validMoves[Math.floor(Math.random() * validMoves.length)];
+                        enemy.x += move.dx;
+                        enemy.y += move.dy;
+                    }
+                }
+            }
+            render();
+        }
+
+        function isEnemyAt(x, y, currentEnemy) {
+            for (const enemy of enemies) {
+                if (enemy !== currentEnemy && enemy.x === x && enemy.y === y) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function showVictory() {
+            victoryStats.innerHTML = `
+                <div>Traps Set: ${collectedGifts}/${TOTAL_GIFTS}</div>
+                <div>Merry Christmas! 🎄</div>
+            `;
+            victoryModal.style.display = 'flex';
+            
+            // ✅ ОТПРАВЛЯЕМ СООБЩЕНИЕ В ГЛАВНУЮ ИГРУ ПРИ ПОБЕДЕ
+            window.parent.postMessage({ game: 'game4', result: 'win' }, '*');
+        }
+
+        // ==========================
+        // 🎮 ОБРАБОТЧИКИ
+        // ==========================
+        document.getElementById('musicBtn').addEventListener('click', () => {
+            if (!soundsLoaded) initAudio();
+            toggleBackgroundMusic();
+        });
+
+        document.addEventListener('keydown', (e) => {
+            switch (e.key.toLowerCase()) {
+                case 'arrowup':
+                case 'w':
+                    movePlayer(0, -1);
+                    break;
+                case 'arrowright':
+                case 'd':
+                    movePlayer(1, 0);
+                    break;
+                case 'arrowdown':
+                case 's':
+                    movePlayer(0, 1);
+                    break;
+                case 'arrowleft':
+                case 'a':
+                    movePlayer(-1, 0);
+                    break;
+            }
+        });
+
+        document.getElementById('victoryCloseBtn').addEventListener('click', () => {
+            victoryModal.style.display = 'none';
+            initGame();
+        });
+
+        function handleResize() {
+            const container = canvas.parentElement;
+            const maxWidth = Math.min(window.innerWidth - 40, 500);
+            canvas.style.width = `${maxWidth}px`;
+            canvas.style.height = `${maxWidth}px`;
+        }
+
+        window.addEventListener('resize', handleResize);
+        document.addEventListener('click', activateAudio, { once: true });
+        document.addEventListener('keydown', activateAudio, { once: true });
+
+        // ✅ ДОБАВЛЕНА ФУНКЦИЯ ПРОИГРЫША (НА СЛУЧАЙ РАСШИРЕНИЯ)
+        function gameOver() {
+            window.parent.postMessage({ game: 'game4', result: 'lose' }, '*');
+        }
+
+        // Запуск
+        initAudio();
+        initGame();
+        handleResize();
+        setInterval(moveEnemies, 600);
+    </script>
+</body>
+</html>
