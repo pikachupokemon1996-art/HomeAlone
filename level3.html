@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kevin’s Christmas Music Match</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Mountains of Christmas', cursive, sans-serif;
+        }
+
+        body {
+            background: url('images/fone3.png') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 15px;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+            overflow-y: auto; /* ✅ Прокрутка, если нужно */
+        }
+
+        .container {
+            max-width: 750px;
+            margin: 0 auto;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        .container::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/fone3.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.2;
+            z-index: -1;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            font-size: 2.5rem; /* 📉 Уменьшено */
+            color: gold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            font-size: 1.1rem; /* 📉 Уменьшено */
+            color: #ffd700;
+            opacity: 0.9;
+        }
+
+        .score-display {
+            text-align: center;
+            font-size: 1.3rem; /* 📉 Уменьшено */
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            border: 2px solid gold;
+        }
+
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 8px; /* 📉 Уменьшено */
+            margin: 15px 0;
+        }
+
+        .card {
+            aspect-ratio: 1;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            border-radius: 10px; /* 📉 Уменьшено */
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4); /* 📉 Уменьшено */
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card-front {
+            background: linear-gradient(135deg, #c41e3a, #0a5f20);
+            color: white;
+            font-size: 1.8rem; /* 📉 Уменьшено */
+            border: 2px solid gold; /* 📉 Уменьшено */
+        }
+
+        .card-back {
+            background: white;
+            transform: rotateY(180deg);
+            border: 2px solid #0a5f20;
+        }
+
+        .artist-image {
+            width: 75%; /* 📉 Уменьшено */
+            height: 75%;
+            object-fit: contain;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px; /* 📉 Уменьшено */
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 10px 25px; /* 📉 Уменьшено */
+            border: none;
+            border-radius: 25px; /* 📉 Уменьшено */
+            font-size: 1rem; /* 📉 Уменьшено */
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+        }
+
+        .new-game {
+            background: gold;
+            color: #c41e3a;
+        }
+
+        .new-game:hover {
+            background: #ffd700;
+            transform: scale(1.05);
+        }
+
+        /* Quiz Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .modal.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #0a5f20, #c41e3a);
+            padding: 25px; /* 📉 Уменьшено */
+            border-radius: 15px; /* 📉 Уменьшено */
+            max-width: 90%;
+            width: 500px; /* 📉 Уменьшено */
+            text-align: center;
+            transform: scale(0.8);
+            transition: transform 0.3s ease;
+            border: 3px solid gold; /* 📉 Уменьшено */
+            color: white;
+        }
+
+        .modal.show .modal-content {
+            transform: scale(1);
+        }
+
+        .modal h2 {
+            color: gold;
+            margin-bottom: 15px; /* 📉 Уменьшено */
+            font-size: 1.8rem; /* 📉 Уменьшено */
+        }
+
+        .quiz-question {
+            font-size: 1.3rem; /* 📉 Уменьшено */
+            margin: 15px 0;
+        }
+
+        .quiz-options {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px; /* 📉 Уменьшено */
+            margin: 20px 0;
+        }
+
+        .quiz-option {
+            padding: 12px 8px; /* 📉 Уменьшено */
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 12px; /* 📉 Уменьшено */
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s ease;
+            color: #c41e3a;
+            font-size: 1rem; /* 📉 Уменьшено */
+        }
+
+        .quiz-option:hover {
+            background: gold;
+            transform: scale(1.03);
+        }
+
+        .result {
+            font-size: 1.2rem; /* 📉 Уменьшено */
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 30px;
+        }
+
+        .correct {
+            color: #4CAF50;
+        }
+
+        .incorrect {
+            color: #FF6B6B;
+        }
+
+        .close-btn {
+            margin-top: 15px; /* 📉 Уменьшено */
+            padding: 8px 20px; /* 📉 Уменьшено */
+            background: gold;
+            color: #c41e3a;
+            border-radius: 15px; /* 📉 Уменьшено */
+            font-weight: bold;
+            border: none;
+            cursor: pointer;
+        }
+
+        .win-message {
+            font-size: 1.8rem; /* 📉 Уменьшено */
+            color: gold;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        footer {
+            margin-top: 20px;
+            text-align: center;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.9rem; /* 📉 Уменьшено */
+        }
+
+        @media (max-width: 600px) {
+            .game-board {
+                gap: 6px;
+            }
+            h1 {
+                font-size: 2rem;
+            }
+            .quiz-options {
+                grid-template-columns: 1fr;
+            }
+            .modal-content {
+                width: 95%;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <p class="subtitle">Find all 8 pairs. Guess at least 6 artists to win!</p>
+        </header>
+
+        <div class="score-display">
+            Correct: <span id="correct-count">0</span> / 8
+        </div>
+
+        <div class="game-board" id="game-board"></div>
+
+        <div class="controls">
+            <button class="new-game" id="new-game">New Game</button>
+        </div>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div class="modal" id="quiz-modal">
+        <div class="modal-content">
+            <h2>🎅 Who Sings This?</h2>
+            <div class="quiz-question" id="quiz-question">🎵 Listen to the clip...</div>
+            <audio id="song-audio" controls style="margin: 15px 0; width: 100%;"></audio>
+            <div class="quiz-options" id="quiz-options"></div>
+            <div class="result" id="quiz-result"></div>
+            <button class="close-btn" id="close-quiz">Next</button>
+        </div>
+    </div>
+
+    <!-- Winner Modal -->
+    <div class="modal" id="winner-modal">
+        <div class="modal-content">
+            <div class="win-message" id="winner-message">🎉 You Win! 🎉</div>
+            <p>You guessed <span id="final-correct">0</span> out of 8 artists correctly!</p>
+            <button class="close-btn" id="close-winner">Play Again</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================
+        // 🔊 ЗВУКИ
+        // ==========================
+        const sounds = {
+            match: new Audio('sounds/catch.mp3'),
+            correct: new Audio('sounds/bell.mp3'),
+            wrong: new Audio('sounds/error.mp3'),
+            win: new Audio('sounds/win.mp3'),
+            lose: new Audio('sounds/gameover.mp3')
+        };
+
+        Object.keys(sounds).forEach(key => {
+            if (key !== 'background') sounds[key].volume = 0.7;
+        });
+
+        function play(name) {
+            const sound = sounds[name];
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(() => {});
+            }
+        }
+
+        // ==========================
+        // 🎵 ВОПРОСЫ
+        // ==========================
+        const musicQuizQuestions = [
+            {
+                song: 'sounds/christmas_evel.mp3',
+                correctAnswer: 'straykids',
+                options: ['exo', 'bts', 'straykids', 'bigbang'],
+                artistNames: {
+                    exo: 'EXO',
+                    bts: 'BTS',
+                    straykids: 'Stray Kids',
+                    bigbang: 'Big Bang'
+                }
+            },
+            {
+                song: 'sounds/what_i_want_for_christmas.mp3',
+                correctAnswer: 'exo',
+                options: ['exo', 'bts', 'straykids', 'bigbang'],
+                artistNames: {
+                    exo: 'EXO',
+                    bts: 'BTS',
+                    straykids: 'Stray Kids',
+                    bigbang: 'Big Bang'
+                }
+            },
+            {
+                song: 'sounds/last_christmas.mp3',
+                correctAnswer: 'bts',
+                options: ['exo', 'bts', 'straykids', 'bigbang'],
+                artistNames: {
+                    exo: 'EXO',
+                    bts: 'BTS',
+                    straykids: 'Stray Kids',
+                    bigbang: 'Big Bang'
+                }
+            },
+            {
+                song: 'sounds/merry_christmas.mp3',
+                correctAnswer: 'bigbang',
+                options: ['exo', 'bts', 'straykids', 'bigbang'],
+                artistNames: {
+                    exo: 'EXO',
+                    bts: 'BTS',
+                    straykids: 'Stray Kids',
+                    bigbang: 'Big Bang'
+                }
+            },
+            {
+                song: 'sounds/beautiful_christmas.mp3',
+                correctAnswer: 'redvelvet',
+                options: ['twice', 'blackpink', 'ive', 'redvelvet'],
+                artistNames: {
+                    twice: 'TWICE',
+                    blackpink: 'Black Pink',
+                    ive: 'IVE',
+                    redvelvet: 'Red Velvet'
+                }
+            },
+            {
+                song: 'sounds/the_christmas_song.mp3',
+                correctAnswer: 'blackpink',
+                options: ['twice', 'blackpink', 'ive', 'redvelvet'],
+                artistNames: {
+                    twice: 'TWICE',
+                    blackpink: 'Black Pink',
+                    ive: 'IVE',
+                    redvelvet: 'Red Velvet'
+                }
+            },
+            {
+                song: 'sounds/merry_happy.mp3',
+                correctAnswer: 'twice',
+                options: ['twice', 'blackpink', 'ive', 'redvelvet'],
+                artistNames: {
+                    twice: 'TWICE',
+                    blackpink: 'Black Pink',
+                    ive: 'IVE',
+                    redvelvet: 'Red Velvet'
+                }
+            },
+            {
+                song: 'sounds/supernova_love.mp3',
+                correctAnswer: 'ive',
+                options: ['twice', 'blackpink', 'ive', 'redvelvet'],
+                artistNames: {
+                    twice: 'TWICE',
+                    blackpink: 'Black Pink',
+                    ive: 'IVE',
+                    redvelvet: 'Red Velvet'
+                }
+            }
+        ];
+
+        // ==========================
+        // 🎮 ИГРОВОЙ СТАТУС
+        // ==========================
+        let gameState = {
+            cards: [],
+            flippedCards: [],
+            matchedPairs: 0,
+            correctAnswers: 0,
+            currentQuestionIndex: 0,
+            isProcessing: false,
+            gameFinished: false
+        };
+
+        // ==========================
+        // 🖼️ КАРТОЧКИ
+        // ==========================
+        const artists = [
+            { name: 'Stray Kids', image: 'images/stray_kids.png' },
+            { name: 'EXO', image: 'images/exo.png' },
+            { name: 'BTS', image: 'images/bts.png' },
+            { name: 'Big Bang', image: 'images/bigbang.png' },
+            { name: 'TWICE', image: 'images/twice.png' },
+            { name: 'Red Velvet', image: 'images/red_velvet.png' },
+            { name: 'Black Pink', image: 'images/blackpink.png' },
+            { name: 'IVE', image: 'images/ive.png' }
+        ];
+
+        // ==========================
+        // 🎯 DOM ЭЛЕМЕНТЫ
+        // ==========================
+        const gameBoard = document.getElementById('game-board');
+        const correctCountEl = document.getElementById('correct-count');
+        const finalCorrectEl = document.getElementById('final-correct');
+        const winnerMessageEl = document.getElementById('winner-message');
+        const quizModal = document.getElementById('quiz-modal');
+        const winnerModal = document.getElementById('winner-modal');
+        const quizQuestionEl = document.getElementById('quiz-question');
+        const quizOptionsEl = document.getElementById('quiz-options');
+        const quizResultEl = document.getElementById('quiz-result');
+        const songAudio = document.getElementById('song-audio');
+        const closeQuizBtn = document.getElementById('close-quiz');
+        const closeWinnerBtn = document.getElementById('close-winner');
+        const newGameBtn = document.getElementById('new-game');
+
+        // ==========================
+        // 🎮 ИНИЦИАЛИЗАЦИЯ
+        // ==========================
+        function initGame() {
+            gameState = {
+                cards: [],
+                flippedCards: [],
+                matchedPairs: 0,
+                correctAnswers: 0,
+                currentQuestionIndex: 0,
+                isProcessing: false,
+                gameFinished: false
+            };
+
+            let cardArray = [];
+            artists.forEach(artist => {
+                cardArray.push({ ...artist, id: Math.random() });
+                cardArray.push({ ...artist, id: Math.random() });
+            });
+
+            cardArray = shuffleArray(cardArray);
+            gameState.cards = cardArray;
+
+            renderBoard();
+            correctCountEl.textContent = '0';
+        }
+
+        function shuffleArray(arr) {
+            return [...arr].sort(() => Math.random() - 0.5);
+        }
+
+        function renderBoard() {
+            gameBoard.innerHTML = '';
+            gameState.cards.forEach(card => {
+                const el = document.createElement('div');
+                el.className = 'card';
+                el.dataset.id = card.id;
+                el.dataset.matched = card.matched || false;
+
+                el.innerHTML = `
+                    <div class="card-inner">
+                        <div class="card-front">?</div>
+                        <div class="card-back">
+                            <img src="${card.image}" alt="${card.name}" class="artist-image">
+                        </div>
+                    </div>
+                `;
+
+                if (card.matched) {
+                    el.classList.add('flipped', 'disabled');
+                }
+
+                el.addEventListener('click', () => handleCardClick(card));
+                gameBoard.appendChild(el);
+            });
+        }
+
+        // ==========================
+        // 🖱️ КЛИК ПО КАРТОЧКЕ
+        // ==========================
+        function handleCardClick(card) {
+            if (gameState.isProcessing || gameState.gameFinished) return;
+            const el = document.querySelector(`[data-id="${card.id}"]`);
+            if (el.classList.contains('flipped') || el.classList.contains('disabled')) return;
+
+            el.classList.add('flipped');
+            gameState.flippedCards.push(card);
+
+            if (gameState.flippedCards.length === 2) {
+                gameState.isProcessing = true;
+                checkMatch();
+            }
+        }
+
+        // ==========================
+        // ✅ ПРОВЕРКА НА СОВПАДЕНИЕ
+        // ==========================
+        function checkMatch() {
+            const [c1, c2] = gameState.flippedCards;
+            if (c1.name === c2.name) {
+                play('match');
+
+                c1.matched = true;
+                c2.matched = true;
+                gameState.matchedPairs++;
+
+                const question = musicQuizQuestions[gameState.currentQuestionIndex];
+                gameState.currentQuestionIndex++;
+                showQuizModal(question);
+            } else {
+                setTimeout(() => {
+                    document.querySelector(`[data-id="${c1.id}"]`).classList.remove('flipped');
+                    document.querySelector(`[data-id="${c2.id}"]`).classList.remove('flipped');
+                    gameState.flippedCards = [];
+                    gameState.isProcessing = false;
+                }, 1000);
+            }
+        }
+
+        // ==========================
+        // 🎵 КВИЗ
+        // ==========================
+        function showQuizModal(question) {
+            quizQuestionEl.textContent = "🎵 Who sings this Christmas song?";
+            quizResultEl.textContent = '';
+            quizResultEl.className = 'result';
+
+            songAudio.src = question.song;
+            songAudio.load();
+
+            quizOptionsEl.innerHTML = '';
+            question.options.forEach(key => {
+                const btn = document.createElement('div');
+                btn.className = 'quiz-option';
+                btn.textContent = question.artistNames[key];
+                btn.dataset.answer = key;
+                btn.addEventListener('click', () => {
+                    const isCorrect = key === question.correctAnswer;
+                    if (isCorrect) {
+                        play('correct');
+                        gameState.correctAnswers++;
+                        quizResultEl.textContent = `✅ Correct! It's ${question.artistNames[key]}!`;
+                        quizResultEl.classList.add('correct');
+                    } else {
+                        play('wrong');
+                        quizResultEl.textContent = `❌ Wrong! It's ${question.artistNames[question.correctAnswer]}.`;
+                        quizResultEl.classList.add('incorrect');
+                    }
+                    correctCountEl.textContent = gameState.correctAnswers;
+                    setTimeout(() => {
+                        closeModal(quizModal);
+                        gameState.flippedCards = [];
+                        gameState.isProcessing = false;
+
+                        if (gameState.matchedPairs === 8) {
+                            endGame();
+                        }
+                    }, 2000);
+                });
+                quizOptionsEl.appendChild(btn);
+            });
+
+            quizModal.classList.add('show');
+            setTimeout(() => songAudio.play().catch(() => {}), 500);
+        }
+
+        // ==========================
+        // 🏁 КОНЕЦ ИГРЫ
+        // ==========================
+        function endGame() {
+            gameState.gameFinished = true;
+
+            finalCorrectEl.textContent = gameState.correctAnswers;
+            if (gameState.correctAnswers >= 6) {
+                play('win');
+                winnerMessageEl.textContent = '🎉 You Win! 🎉';
+                // ✅ ОТПРАВЛЯЕМ СООБЩЕНИЕ В ГЛАВНУЮ ИГРУ
+                window.parent.postMessage({ game: 'game3', result: 'win' }, '*');
+            } else {
+                play('lose');
+                winnerMessageEl.textContent = '💔 Try Again!';
+                // ✅ ОТПРАВЛЯЕМ СООБЩЕНИЕ В ГЛАВНУЮ ИГРУ
+                window.parent.postMessage({ game: 'game3', result: 'lose' }, '*');
+            }
+
+            winnerModal.classList.add('show');
+        }
+
+        // ==========================
+        // 🚪 МОДАЛКИ
+        // ==========================
+        function closeModal(modal) {
+            modal.classList.remove('show');
+        }
+
+        // ==========================
+        // 🎮 КНОПКИ
+        // ==========================
+        newGameBtn.addEventListener('click', initGame);
+        closeWinnerBtn.addEventListener('click', initGame);
+        closeQuizBtn.addEventListener('click', () => {
+            closeModal(quizModal);
+            gameState.flippedCards = [];
+            gameState.isProcessing = false;
+            if (gameState.matchedPairs === 8) {
+                endGame();
+            }
+        });
+
+        // ==========================
+        // 🚀 СТАРТ
+        // ==========================
+        initGame();
+    </script>
+</body>
+</html>

@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Level 5: Boss Battle</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Mountains of Christmas', cursive, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #c41e3a, #0a5f20);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Фон битвы */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('images/fone5.png') no-repeat center center;
+            background-size: cover;
+            opacity: 0.85;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 800px;
+            width: 95%;
+            text-align: center;
+            z-index: 1;
+        }
+
+        /* ЗАГОЛОВОК УДАЛЁН — НЕТ h1 */
+
+        .health-bars {
+            display: flex;
+            justify-content: space-between;
+            margin: 20px 0;
+            gap: 20px;
+        }
+
+        .health-bar {
+            flex: 1;
+            background: rgba(0,0,0,0.3);
+            padding: 15px;
+            border-radius: 15px;
+            border: 2px solid gold;
+        }
+
+        .health-label {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+
+        .health-value {
+            height: 30px;
+            background: #c41e3a;
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .boss-container {
+            margin: 30px 0;
+        }
+
+        .boss {
+            width: 300px;
+            height: 300px;
+            background: url('images/wetb.png') no-repeat center center;
+            background-size: contain;
+            margin: 0 auto;
+            border: 3px solid gold;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.9);
+        }
+
+        .question-box {
+            background: rgba(0,0,0,0.7);
+            padding: 25px;
+            border-radius: 20px;
+            margin: 30px 0;
+            border: 3px solid gold;
+        }
+
+        .question {
+            font-size: 1.6rem;
+            margin-bottom: 25px;
+            color: #ffd700;
+        }
+
+        .options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .option {
+            padding: 15px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #c41e3a;
+            transition: all 0.2s;
+        }
+
+        .option:hover {
+            background: gold;
+            transform: scale(1.03);
+        }
+
+        .controls {
+            margin-top: 20px;
+        }
+
+        button {
+            padding: 12px 30px;
+            background: gold;
+            color: #c41e3a;
+            border: none;
+            border-radius: 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+
+        button:hover {
+            background: #ffd700;
+            transform: scale(1.05);
+        }
+
+        .result {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            min-height: 30px;
+            font-weight: bold;
+        }
+
+        .correct { color: #4CAF50; }
+        .incorrect { color: #FF6B6B; }
+
+        @media (max-width: 600px) {
+            .options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- ЗАГОЛОВОК УДАЛЁН -->
+        
+        <div class="health-bars">
+            <div class="health-bar">
+                <div class="health-label">Kevin ❤️</div>
+                <div class="health-value" id="player-health" style="width: 100%;"></div>
+            </div>
+            <div class="health-bar">
+                <div class="health-label">Wet Bandits 💀</div>
+                <div class="health-value" id="boss-health" style="width: 100%;"></div>
+            </div>
+        </div>
+
+        <div class="boss-container">
+            <div class="boss"></div>
+        </div>
+
+        <div class="question-box">
+            <div class="question" id="question-text">Defeat the Wet Bandits with your Christmas knowledge!</div>
+            <div class="options" id="options-container"></div>
+            <div class="result" id="result"></div>
+        </div>
+
+        <div class="controls">
+            <button id="restart-btn">Restart Battle</button>
+        </div>
+    </div>
+
+    <script>
+        // ==========================
+        // 🔊 ЗВУКИ
+        // ==========================
+        const sounds = {
+            background: new Audio('sounds/merry_happy.mp3'),
+            hit: new Audio('sounds/bell.mp3'),
+            playerHit: new Audio('sounds/error.mp3'),
+            win: new Audio('sounds/win.mp3'),
+            lose: new Audio('sounds/gameover.mp3')
+        };
+
+        sounds.background.loop = true;
+        sounds.background.volume = 0.4;
+        Object.keys(sounds).forEach(key => {
+            if (key !== 'background') sounds[key].volume = 0.7;
+        });
+
+        function play(name) {
+            const sound = sounds[name];
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(() => {});
+            }
+        }
+
+        // ==========================
+        // 🎯 ВОПРОСЫ
+        // ==========================
+        const questions = [
+            ["What should you say when someone gives you a gift?", "Hello!", "Goodbye!", "Thank you!", "Merry Christmas!", 3],
+            ["What do people hang on the fireplace?", "Socks", "Shoes", "Hats", "Stockings", 4],
+            ["Who delivers presents on Christmas Eve?", "Santa Claus", "Easter Bunny", "Tooth Fairy", "Kevin McCallister", 1],
+            ["What color is Santa's suit?", "Green", "Red", "Blue", "Gold", 2],
+            ["What do reindeer pull?", "Car", "Train", "Sleigh", "Bicycle", 3],
+            ["What do you put on top of the Christmas tree?", "Star or Angel", "Snowman", "Present", "Cookie", 1],
+            ["What do children leave for Santa?", "Pizza", "Money", "A Letter", "Milk and Cookies", 4],
+            ["What is the day after Christmas called?", "Boxing Day", "New Year", "Easter", "Thanksgiving", 1],
+            ["What do you say on Christmas morning?", "Happy Halloween!", "Happy Birthday!", "Good Night!", "Merry Christmas!", 4],
+            ["What do elves make in Santa's workshop?", "Toys", "Pizza", "Paint Cans", "Snowballs", 1]
+        ];
+
+        // ==========================
+        // 🎮 СОСТОЯНИЕ ИГРЫ
+        // ==========================
+        let playerHealth = 100;
+        let bossHealth = 100;
+        let currentQuestionIndex = 0;
+        let gameActive = true;
+
+        const playerHealthBar = document.getElementById('player-health');
+        const bossHealthBar = document.getElementById('boss-health');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const resultEl = document.getElementById('result');
+
+        // ==========================
+        // 🎮 ИНИЦИАЛИЗАЦИЯ
+        // ==========================
+        function initGame() {
+            playerHealth = 100;
+            bossHealth = 100;
+            currentQuestionIndex = 0;
+            gameActive = true;
+            updateHealthBars();
+            resultEl.textContent = '';
+            resultEl.className = 'result';
+            showQuestion();
+            play('background');
+        }
+
+        // ==========================
+        // 🎯 ПОКАЗАТЬ ВОПРОС
+        // ==========================
+        function showQuestion() {
+            if (!gameActive) return;
+            if (currentQuestionIndex >= questions.length) {
+                currentQuestionIndex = 0;
+            }
+
+            const q = questions[currentQuestionIndex];
+            questionText.textContent = q[0];
+            optionsContainer.innerHTML = '';
+
+            for (let i = 1; i <= 4; i++) {
+                const btn = document.createElement('div');
+                btn.className = 'option';
+                btn.textContent = q[i];
+                btn.onclick = () => answerQuestion(i === q[5]);
+                optionsContainer.appendChild(btn);
+            }
+        }
+
+        // ==========================
+        // ✅ ОТВЕТИТЬ НА ВОПРОС
+        // ==========================
+        function answerQuestion(isCorrect) {
+            if (!gameActive) return;
+
+            if (isCorrect) {
+                play('hit');
+                bossHealth -= 20;
+                resultEl.textContent = "✅ Correct! Wet Bandits take damage!";
+                resultEl.className = 'result correct';
+            } else {
+                play('playerHit');
+                playerHealth -= 25;
+                resultEl.textContent = "❌ Wrong! Kevin takes damage!";
+                resultEl.className = 'result incorrect';
+            }
+
+            updateHealthBars();
+            currentQuestionIndex++;
+
+            setTimeout(() => {
+                if (bossHealth <= 0) {
+                    gameActive = false;
+                    play('win');
+                    resultEl.textContent = "🎉 YOU WIN! The Wet Bandits are defeated!";
+                    resultEl.className = 'result correct';
+                    sounds.background.pause();
+                    
+                    // ✅ ОТПРАВЛЯЕМ СООБЩЕНИЕ В ГЛАВНУЮ ИГРУ — ПОБЕДА
+                    window.parent.postMessage({ game: 'game5', result: 'win' }, '*');
+                } else if (playerHealth <= 0) {
+                    gameActive = false;
+                    play('lose');
+                    resultEl.textContent = "💔 YOU LOST! The Wet Bandits escaped!";
+                    resultEl.className = 'result incorrect';
+                    sounds.background.pause();
+                    
+                    // ✅ ОТПРАВЛЯЕМ СООБЩЕНИЕ В ГЛАВНУЮ ИГРУ — ПОРАЖЕНИЕ
+                    window.parent.postMessage({ game: 'game5', result: 'lose' }, '*');
+                } else {
+                    resultEl.textContent = '';
+                    showQuestion();
+                }
+            }, 2000);
+        }
+
+        // ==========================
+        // 🩹 ОБНОВИТЬ ПОЛОСЫ ЗДОРОВЬЯ
+        // ==========================
+        function updateHealthBars() {
+            playerHealthBar.style.width = Math.max(0, playerHealth) + '%';
+            bossHealthBar.style.width = Math.max(0, bossHealth) + '%';
+        }
+
+        // ==========================
+        // 🎮 ОБРАБОТЧИКИ
+        // ==========================
+        document.getElementById('restart-btn').addEventListener('click', initGame);
+
+        // ==========================
+        // 🚀 СТАРТ
+        // ==========================
+        initGame();
+    </script>
+</body>
+</html>

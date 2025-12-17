@@ -1,0 +1,557 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kevin’s Christmas Word Hunt</title>
+  <style>
+    /* ОСНОВНОЙ КОНТЕЙНЕР — РАСТЯГИВАЕТСЯ НА ВСЁ ОКНО */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden; /* Отключаем прокрутку тела */
+    }
+
+    body {
+      font-family: 'Mountains of Christmas', cursive, sans-serif;
+      background: linear-gradient(135deg, #c41e3a, #0a5f20);
+      color: white;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.6);
+    }
+
+    /* ОСНОВНОЙ КОНТЕЙНЕР С ПРОКРУТКОЙ */
+    .game-container {
+      width: 100%;
+      height: 100%;
+      overflow-y: auto; /* Добавлена прокрутка */
+      position: relative;
+    }
+
+    /* ИКОНКА ЗВУКА */
+    #soundToggle {
+      position: fixed;
+      top: 70px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+      background: rgba(255, 255, 255, 0.8);
+      border-radius: 50%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      z-index: 1000;
+      font-size: 20px;
+      border: 2px solid white;
+      transition: transform 0.2s;
+    }
+    #soundToggle:hover {
+      transform: scale(1.1);
+    }
+    #soundToggle.muted {
+      opacity: 0.5;
+    }
+
+    .game-card {
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+      max-width: 800px;
+      width: 95%;
+      text-align: center;
+      margin: 20px auto;
+      position: relative;
+      z-index: 1;
+    }
+
+    .game-title {
+      font-size: 36px;
+      color: #c41e3a;
+      margin: 10px 0;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
+    }
+
+    .round-info {
+      font-size: 22px;
+      color: #0a5f20;
+      font-weight: bold;
+      margin: 10px 0;
+    }
+
+    .difficulty-badge {
+      display: inline-block;
+      padding: 6px 18px;
+      border-radius: 20px;
+      font-size: 16px;
+      font-weight: bold;
+      margin: 10px 0;
+      background: #ffd700;
+      color: #c41e3a;
+    }
+
+    .score-display {
+      font-size: 24px;
+      color: #c41e3a;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+
+    .word-grid {
+      display: grid;
+      gap: 6px;
+      margin: 20px auto;
+      justify-content: center;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 15px;
+    }
+
+    .grid-cell {
+      width: 40px;
+      height: 40px;
+      background: white;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+      user-select: none;
+    }
+
+    .grid-cell:hover {
+      background: #f0f0f0;
+      transform: scale(1.05);
+    }
+
+    .grid-cell.selected {
+      background: #ffd700;
+      border-color: #ff9900;
+      transform: scale(1.1);
+    }
+
+    .grid-cell.found {
+      background: #90EE90;
+      border-color: #2e8b57;
+      color: #2e8b57;
+      pointer-events: none;
+    }
+
+    .words-list {
+      margin: 25px 0;
+    }
+
+    .words-title {
+      font-size: 18px;
+      color: #0a5f20;
+      font-weight: bold;
+      margin-bottom: 12px;
+    }
+
+    .word-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+    }
+
+    .word-chip {
+      padding: 8px 16px;
+      background: #f0f0f0;
+      border: 2px solid #ddd;
+      border-radius: 20px;
+      font-size: 15px;
+      font-weight: bold;
+      color: #666;
+      transition: all 0.3s;
+    }
+
+    .word-chip.found {
+      background: #90EE90;
+      border-color: #2e8b57;
+      color: #2e8b57;
+      text-decoration: line-through;
+    }
+
+    .game-button {
+      background: #c41e3a;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 18px;
+      font-weight: bold;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin: 10px;
+      box-shadow: 0 4px 10px rgba(196, 30, 58, 0.3);
+    }
+
+    .game-button:hover {
+      background: #a01729;
+      transform: translateY(-2px);
+    }
+
+    .instructions {
+      font-size: 16px;
+      color: #555;
+      margin: 15px 0;
+      line-height: 1.5;
+    }
+
+    @media (max-width: 600px) {
+      .grid-cell {
+        width: 30px;
+        height: 30px;
+        font-size: 14px;
+      }
+      .game-title { font-size: 28px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container" id="gameContainer">
+    <div class="game-card" id="gameCard"></div>
+    <div id="soundToggle">🔊</div>
+  </div>
+
+  <script>
+    // ==========================
+    // 🔊 ЗВУКИ
+    // ==========================
+    let soundsLoaded = false;
+    const sounds = {
+      click: null,
+      found: null,
+      win: null,
+      background: null
+    };
+    let soundEnabled = true;
+
+    function initAudio() {
+      if (soundsLoaded) return;
+      sounds.click = new Audio('sounds/bell.mp3');
+      sounds.found = new Audio('sounds/catch.mp3');
+      sounds.win = new Audio('sounds/win.mp3');
+      sounds.background = new Audio('sounds/background_music2.mp3');
+      sounds.background.loop = true;
+      sounds.background.volume = 0.3;
+      Object.values(sounds).forEach(s => s.volume = s === sounds.background ? 0.3 : 0.6);
+      soundsLoaded = true;
+      updateSoundIcon();
+      if (soundEnabled) startBackgroundMusic();
+    }
+
+    function startBackgroundMusic() {
+      if (sounds.background) {
+        sounds.background.play().catch(() => {});
+      }
+    }
+
+    function stopBackgroundMusic() {
+      if (sounds.background) {
+        sounds.background.pause();
+      }
+    }
+
+    function playSound(name) {
+      if (soundsLoaded && sounds[name]) {
+        sounds[name].currentTime = 0;
+        sounds[name].play().catch(() => {});
+      }
+    }
+
+    function toggleSound() {
+      soundEnabled = !soundEnabled;
+      updateSoundIcon();
+      if (soundEnabled) {
+        startBackgroundMusic();
+      } else {
+        stopBackgroundMusic();
+      }
+      localStorage.setItem('soundEnabled', soundEnabled);
+    }
+
+    function updateSoundIcon() {
+      const icon = document.getElementById('soundToggle');
+      if (!icon) return;
+      icon.textContent = soundEnabled ? '🔊' : '🔇';
+      icon.classList.toggle('muted', !soundEnabled);
+    }
+
+    function activateAudio() {
+      if (!soundsLoaded) {
+        initAudio();
+      }
+    }
+
+    // ==========================
+    // 🎯 УРОВНИ
+    // ==========================
+    const levels = [
+      {
+        theme: "🛒 Kevin's Shopping List",
+        background: 'images/level12.png',
+        size: 10,
+        words: ["MILK", "COOKIE", "PIZZA", "BATTERIES", "TAPE", "ORNAMENT", "GIFTS"]
+      },
+      {
+        theme: "🧹 Home Alone Chores",
+        background: 'images/level22.png',
+        size: 10,
+        words: ["CLEAN", "COOK", "DECORATE", "VACUUM", "WRAP", "FIX", "HIDE"]
+      },
+      {
+        theme: "📝 Make Sentences!",
+        background: 'images/level32.png',
+        size: 10,
+        words: ["WE", "ROB", "THIS", "LITTLE", "BOY", "HOUSE", "EVENING"]
+      }
+    ];
+
+    let currentLevel = 0;
+    let grid = [];
+    let foundWords = [];
+    let selectedCells = [];
+    let isSelecting = false;
+    let score = 0;
+
+    // ==========================
+    // 🧩 СОЗДАНИЕ СЕТКИ
+    // ==========================
+    function createGrid(size, words) {
+      grid = Array(size).fill().map(() => Array(size).fill(''));
+      
+      words.forEach((word, idx) => {
+        let placed = false;
+        let attempts = 0;
+        while (!placed && attempts < 200) {
+          const dir = Math.floor(Math.random() * 2); // 0 = horizontal, 1 = vertical
+          const row = Math.floor(Math.random() * size);
+          const col = Math.floor(Math.random() * size);
+          if (canPlaceWord(word, row, col, dir, size)) {
+            placeWord(word, row, col, dir);
+            placed = true;
+          }
+          attempts++;
+        }
+      });
+      
+      for (let i = 0; i < size; i++) {
+        for (let j = 0; j < size; j++) {
+          if (!grid[i][j]) {
+            grid[i][j] = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+          }
+        }
+      }
+    }
+
+    function canPlaceWord(word, row, col, dir, size) {
+      const dirs = [[0,1], [1,0]];
+      const [dr, dc] = dirs[dir];
+      for (let i = 0; i < word.length; i++) {
+        const r = row + dr * i;
+        const c = col + dc * i;
+        if (r >= size || c >= size || grid[r][c] && grid[r][c] !== word[i]) return false;
+      }
+      return true;
+    }
+
+    function placeWord(word, row, col, dir) {
+      const dirs = [[0,1], [1,0]];
+      const [dr, dc] = dirs[dir];
+      for (let i = 0; i < word.length; i++) {
+        const r = row + dr * i;
+        const c = col + dc * i;
+        grid[r][c] = word[i];
+      }
+    }
+
+    // ==========================
+    // 🎨 ОТОБРАЖЕНИЕ
+    // ==========================
+    function renderMenu() {
+      document.getElementById('gameCard').innerHTML = `
+        <h1 class="game-title">Kevin’s Word Hunt!</h1>
+        <p class="instructions">Find hidden Christmas words! Click and drag across letters.</p>
+        <button class="game-button" onclick="startGame()">Start Game 🎁</button>
+      `;
+      // Загрузка состояния звука
+      const saved = localStorage.getItem('soundEnabled');
+      if (saved !== null) {
+        soundEnabled = saved === 'true';
+      }
+      updateSoundIcon();
+    }
+
+    function renderGame() {
+      const level = levels[currentLevel];
+      document.getElementById('gameContainer').style.backgroundImage = `url('${level.background}')`;
+      document.getElementById('gameContainer').style.backgroundSize = 'cover';
+      document.getElementById('gameContainer').style.backgroundPosition = 'center';
+
+      document.getElementById('gameCard').innerHTML = `
+        <div class="round-info">Level ${currentLevel + 1} of ${levels.length}</div>
+        <h2 class="game-title">${level.theme}</h2>
+        <div class="difficulty-badge">🎄 CHALLENGE</div>
+        <div class="score-display">Score: ${score} 🌟</div>
+        <div class="word-grid" id="wordGrid" style="grid-template-columns: repeat(${level.size}, 40px);"></div>
+        <div class="words-list">
+          <div class="words-title">Find these words:</div>
+          <div class="word-chips" id="wordChips"></div>
+        </div>
+      `;
+      
+      const gridEl = document.getElementById('wordGrid');
+      grid.forEach((row, i) => {
+        row.forEach((cell, j) => {
+          const div = document.createElement('div');
+          div.className = 'grid-cell';
+          div.textContent = cell;
+          div.dataset.row = i;
+          div.dataset.col = j;
+          div.addEventListener('mousedown', () => startSelection(i, j));
+          div.addEventListener('mouseenter', () => continueSelection(i, j));
+          gridEl.appendChild(div);
+        });
+      });
+      document.addEventListener('mouseup', endSelection);
+      renderWordChips();
+    }
+
+    function renderWordChips() {
+      const level = levels[currentLevel];
+      const container = document.getElementById('wordChips');
+      container.innerHTML = '';
+      level.words.forEach(word => {
+        const chip = document.createElement('div');
+        chip.className = 'word-chip';
+        if (foundWords.includes(word)) chip.classList.add('found');
+        chip.textContent = word;
+        container.appendChild(chip);
+      });
+    }
+
+    // ==========================
+    // 🖱️ ВЫДЕЛЕНИЕ СЛОВ
+    // ==========================
+    function startSelection(row, col) {
+      isSelecting = true;
+      selectedCells = [{row, col}];
+      updateSelection();
+    }
+
+    function continueSelection(row, col) {
+      if (!isSelecting) return;
+      if (selectedCells.length === 1) {
+        selectedCells.push({row, col});
+        updateSelection();
+        return;
+      }
+      const last = selectedCells[selectedCells.length - 1];
+      const prev = selectedCells[selectedCells.length - 2];
+      const dr = last.row - prev.row;
+      const dc = last.col - prev.col;
+      if (row === last.row + dr && col === last.col + dc) {
+        selectedCells.push({row, col});
+        updateSelection();
+      }
+    }
+
+    function updateSelection() {
+      document.querySelectorAll('.grid-cell').forEach(el => el.classList.remove('selected'));
+      selectedCells.forEach(({row, col}) => {
+        const el = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+        if (el && !el.classList.contains('found')) el.classList.add('selected');
+      });
+    }
+
+    function endSelection() {
+      if (!isSelecting) return;
+      isSelecting = false;
+      const word = selectedCells.map(({row, col}) => grid[row][col]).join('');
+      const level = levels[currentLevel];
+      
+      if (level.words.includes(word) && !foundWords.includes(word)) {
+        foundWords.push(word);
+        score += word.length * 10 * (currentLevel + 1);
+        playSound('found');
+        selectedCells.forEach(({row, col}) => {
+          const el = document.querySelector(`[data-row="${row}"][data-col="${col}"]`);
+          el.classList.add('found');
+        });
+        renderWordChips();
+        updateScore();
+        if (foundWords.length === level.words.length) completeLevel();
+      }
+      selectedCells = [];
+      updateSelection();
+    }
+
+    function updateScore() {
+      const el = document.querySelector('.score-display');
+      if (el) el.textContent = `Score: ${score} 🌟`;
+    }
+
+    function completeLevel() {
+      playSound('win');
+      stopBackgroundMusic();
+      if (currentLevel < levels.length - 1) {
+        setTimeout(() => {
+          currentLevel++;
+          foundWords = [];
+          activateAudio();
+          startGame();
+        }, 1500);
+      } else {
+        // ✅ ПОБЕДА — ОТПРАВЛЯЕМ СООБЩЕНИЕ В ГЛАВНУЮ ИГРУ
+        document.getElementById('gameCard').innerHTML = `
+          <h1 class="game-title">🎉 You Won! 🎉</h1>
+          <div class="final-score" style="font-size: 40px; color: gold;">${score} 🌟</div>
+          <button class="game-button" onclick="reportWin()">Continue</button>
+        `;
+      }
+    }
+
+    // ✅ ФУНКЦИЯ ОТПРАВКИ РЕЗУЛЬТАТА
+    function reportWin() {
+      window.parent.postMessage({ game: 'game2', result: 'win' }, '*');
+    }
+
+    // ✅ ФУНКЦИЯ ПРОИГРЫША (если добавите жизни)
+    function reportLose() {
+      window.parent.postMessage({ game: 'game2', result: 'lose' }, '*');
+    }
+
+    function startGame() {
+      activateAudio();
+      const level = levels[currentLevel];
+      createGrid(level.size, level.words);
+      renderGame();
+      playSound('click');
+    }
+
+    // ==========================
+    // ▶️ ЗАПУСК
+    // ==========================
+    window.onload = () => {
+      renderMenu();
+    };
+
+    // Обработчик клика по иконке звука
+    document.getElementById('soundToggle').addEventListener('click', (e) => {
+      e.stopPropagation();
+      toggleSound();
+    });
+
+    // Активация звука при первом взаимодействии
+    document.addEventListener('click', activateAudio, { once: true });
+    document.addEventListener('keydown', activateAudio, { once: true });
+  </script>
+</body>
+</html>
