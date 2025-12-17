@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Home Alone: Christmas Quest</title>
+  <link href="https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Nunito:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --xmas-red: #d42426;
+      --xmas-green: #0d5c21;
+      --xmas-white: #ffffff;
+      --xmas-gold: #d4af37;
+      --bg-dark: #0a2e1d;
+      --btn-inactive: #666;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Nunito', sans-serif;
+      background-color: var(--bg-dark);
+      color: var(--xmas-white);
+      min-height: 100vh;
+      padding: 20px;
+      overflow-x: hidden;
+    }
+
+    .container {
+      display: flex;
+      max-width: 1400px;
+      margin: 0 auto;
+      gap: 25px;
+    }
+
+    .panel {
+      background: rgba(0, 0, 0, 0.75);
+      border-radius: 16px;
+      padding: 22px;
+      border: 2px solid var(--xmas-gold);
+    }
+
+    .left-panel {
+      width: 300px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .center-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .header {
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 2.8rem;
+      color: var(--xmas-gold);
+      text-align: center;
+      margin-bottom: 15px;
+    }
+
+    /* >>>>>>>>>>>>>> ГЛАВНОЕ ИЗОБРАЖЕНИЕ ДОМА — ЗАМЕНЕНО НА ВАШЕ <<<<<<<<<<<< */
+    .house-image {
+      width: 100%;
+      max-width: 700px;
+      height: 480px;
+      background: url('images/main.png') center/cover no-repeat;
+      border: 4px solid var(--xmas-red);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .house-content {
+      /* Удаляем текст, так как фон — полноценная картинка */
+      display: none;
+    }
+
+    .scene-preview {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: rgba(0, 0, 0, 0.88);
+      padding: 25px;
+      text-align: center;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .scene-preview.show {
+      opacity: 1;
+    }
+
+    .preview-title {
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 2.2rem;
+      color: var(--xmas-gold);
+      margin-bottom: 15px;
+    }
+
+    .preview-desc {
+      font-size: 1.35rem;
+      line-height: 1.5;
+      max-width: 85%;
+    }
+
+    .btn {
+      padding: 16px 20px;
+      font-size: 1.15rem;
+      font-family: 'Nunito', sans-serif;
+      font-weight: 700;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      text-align: left;
+      position: relative;
+    }
+
+    .btn:disabled {
+      opacity: 0.8;
+      cursor: not-allowed;
+    }
+
+    .btn.inactive {
+      background: var(--btn-inactive);
+      color: #ccc;
+    }
+
+    .btn.active, .btn.unlocked {
+      background: var(--xmas-red);
+      color: var(--xmas-white);
+    }
+
+    .btn.completed {
+      background: var(--xmas-green);
+      color: var(--xmas-white);
+    }
+
+    .btn.completed::after {
+      content: "✓";
+      position: absolute;
+      right: 16px;
+      font-weight: bold;
+      font-size: 1.4rem;
+    }
+
+    .btn.hysteria {
+      background: var(--xmas-red);
+      color: var(--xmas-white);
+      font-weight: bold;
+      font-family: 'Mountains of Christmas', cursive;
+      border: 3px solid var(--xmas-gold);
+      font-size: 1.3rem;
+      padding: 18px;
+    }
+
+    /* ========== МОДАЛЬНОЕ ОКНО — УВЕЛИЧЕННОЕ ДЛЯ ИГРЫ ========== */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.95);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    .modal-content {
+      background: var(--bg-dark);
+      width: 95%;
+      max-width: 1200px;
+      height: 90vh;
+      border-radius: 20px;
+      padding: 20px;
+      position: relative;
+      border: 4px solid var(--xmas-gold);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .modal-header {
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 2.4rem;
+      color: var(--xmas-gold);
+      text-align: center;
+      margin-bottom: 15px;
+      flex-shrink: 0;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      font-size: 2.5rem;
+      color: var(--xmas-red);
+      cursor: pointer;
+      z-index: 10;
+    }
+
+    .mini-game-container {
+      flex: 1;
+      width: 100%;
+      border-radius: 12px;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+    }
+
+    .game-iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+      border-radius: 10px;
+    }
+
+    .ending-screen {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 80vh;
+      padding: 20px;
+      text-align: center;
+    }
+
+    .ending-content {
+      background: rgba(0, 0, 0, 0.1);
+      padding: 45px;
+      border-radius: 25px;
+      max-width: 800px;
+      width: 100%;
+      border: 4px solid var(--xmas-gold);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* >>>>>>>>>>>>>> ФОНЫ ДЛЯ ФИНАЛОВ — ЗАМЕНЯЕМ КРУГ НА ВАШИ ИЗОБРАЖЕНИЯ <<<<<<<<<<<< */
+    .ending-bg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-size: cover;
+      background-position: center;
+      z-index: -1;
+    }
+
+    .ending-title {
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 3rem;
+      color: var(--xmas-gold);
+      margin-bottom: 25px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .ending-text {
+      font-size: 1.6rem;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      color: #eee;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* Скрываем стандартный икон-круг */
+    .ending-image {
+      display: none;
+    }
+
+    .restart-btn {
+      background: var(--xmas-red);
+      color: var(--xmas-white);
+      font-family: 'Mountains of Christmas', cursive;
+      font-size: 1.8rem;
+      padding: 16px 45px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      margin-top: 20px;
+      position: relative;
+      z-index: 1;
+    }
+
+    @media (max-width: 1100px) {
+      .container {
+        flex-direction: column;
+        align-items: center;
+      }
+      .left-panel {
+        width: 90%;
+        max-width: 500px;
+      }
+      .house-image {
+        height: 400px;
+      }
+      .modal-content {
+        width: 95%;
+        max-width: 900px;
+        height: 85vh;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .modal-content {
+        width: 95%;
+        max-width: 600px;
+        height: 80vh;
+      }
+      .header { font-size: 2rem; }
+      .btn { font-size: 1rem; padding: 14px 16px; }
+      .ending-title { font-size: 2.2rem; }
+      .ending-text { font-size: 1.3rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <div id="main-screen">
+    <h1 class="header">🎄 Home Alone: Christmas Quest 🎄</h1>
+    
+    <div class="container">
+      <div class="panel left-panel" id="scene-buttons">
+        <!-- Кнопки будут сгенерированы -->
+      </div>
+
+      <div class="center-content">
+        <div class="house-image" id="house-container">
+          <!-- Фон уже задан через CSS -->
+          <div class="scene-preview" id="scene-preview">
+            <div class="preview-title" id="preview-title">Scene Preview</div>
+            <div class="preview-desc" id="preview-desc">Hover over a scene</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно игры -->
+  <div class="modal" id="game-modal">
+    <div class="modal-content">
+      <span class="close-btn" id="close-modal">&times;</span>
+      <h2 class="modal-header" id="modal-title">Adventure Task</h2>
+      <div class="mini-game-container">
+        <iframe class="game-iframe" id="game-iframe" src="" frameborder="0"></iframe>
+      </div>
+    </div>
+  </div>
+
+  <!-- ФИНАЛЬНЫЕ ЭКРАНЫ С ВАШИМИ ИЗОБРАЖЕНИЯМИ -->
+  <div class="ending-screen" id="good-ending">
+    <div class="ending-content">
+      <div class="ending-bg" style="background-image: url('images/good.png');"></div>
+      <div class="ending-title">Merry Christmas! 🎄</div>
+      <div class="ending-text">Mom is back! After a joyful reunion under the twinkling Christmas tree, she hugs you tightly. The Wet Bandits are behind bars — all thanks to your clever trap strategy!</div>
+      <button class="restart-btn" id="restart-good">Play Again</button>
+    </div>
+  </div>
+
+  <div class="ending-screen" id="bad-ending">
+    <div class="ending-content">
+      <div class="ending-bg" style="background-image: url('images/bad.png');"></div>
+      <div class="ending-title">Ouch! 😣</div>
+      <div class="ending-text">The Wet Bandits caught you! You’re lying on the floor with a sore head... Mom will be so worried when she gets home.</div>
+      <button class="restart-btn" id="restart-bad">Try Again</button>
+    </div>
+  </div>
+
+  <div class="ending-screen" id="neutral-ending">
+    <div class="ending-content">
+      <div class="ending-bg" style="background-image: url('images/ok.png');"></div>
+      <div class="ending-title">Officer to the Rescue 👮</div>
+      <div class="ending-text">An officer finds you and says: "Don’t worry, son. We’ll wait for your mom at the station. You’re safe now."</div>
+      <button class="restart-btn" id="restart-neutral">Start Over</button>
+    </div>
+  </div>
+
+  <script>
+    // ==========================
+    // ДАННЫЕ ИГРЫ
+    // ==========================
+    const gameData = {
+      game1: { status: "inactive", won: false },
+      game2: { status: "inactive", won: false },
+      game3: { status: "inactive", won: false },
+      game4: { status: "inactive", won: false },
+      game5: { status: "locked", won: false },
+      ending_shown: false
+    };
+
+    // ==========================
+    // ОПИСАНИЯ ИГР С ПУТЯМИ К ПРЕВЬЮ И ИГРАМ
+    // ==========================
+    const games = [
+      {
+        id: "game1",
+        title: "Kevin’s Christmas Luggage Panic!",
+        icon: "🧳",
+        // >>>>>>>>>>>>>> ОПИСАНИЕ НА АНГЛИЙСКОМ <<<<<<<<<<<<
+        desc: "Help Kevin pack his Christmas luggage before the family leaves for Paris! Catch the right holiday items and avoid distractions.",
+        previewImage: "images/game1.png",
+        gamePath: "games/level1.html"
+      },
+      {
+        id: "game2",
+        title: "Kevin’s Word Hunt!",
+        icon: "🔍",
+        desc: "Complete household chores and uncover the Wet Bandits’ secret plan! Solve word puzzles to set your traps.",
+        previewImage: "images/game2.png",
+        gamePath: "games/level2.html"
+      },
+      {
+        id: "game3",
+        title: "Kevin’s Christmas Music Match",
+        icon: "🎵",
+        desc: "Listen to festive carols in church and match K-pop Christmas songs to their artists! Train your musical memory.",
+        previewImage: "images/game3.png",
+        gamePath: "games/level3.html"
+      },
+      {
+        id: "game4",
+        title: "Kevin's Trap Maze",
+        icon: "🪤",
+        desc: "Navigate a tricky maze, collect trap items, and avoid the Wet Bandits! Use your English grammar skills to unlock paths.",
+        previewImage: "images/game4.png",
+        gamePath: "games/level4.html"
+      },
+      {
+        id: "game5",
+        title: "Final Boss Battle!",
+        icon: "⚔️",
+        desc: "Face the Wet Bandits in the ultimate Christmas showdown! Answer true/false questions to defeat them once and for all.",
+        previewImage: "images/game5.png",
+        gamePath: "games/level5.html"
+      }
+    ];
+
+    // DOM
+    const sceneButtons = document.getElementById('scene-buttons');
+    const previewTitle = document.getElementById('preview-title');
+    const previewDesc = document.getElementById('preview-desc');
+    const scenePreview = document.getElementById('scene-preview');
+    const gameModal = document.getElementById('game-modal');
+    const modalTitle = document.getElementById('modal-title');
+    const gameIframe = document.getElementById('game-iframe');
+
+    let currentGame = null;
+
+    // ==========================
+    // ЗАГРУЗКА СОХРАНЁННОГО ПРОГРЕССА
+    // ==========================
+    document.addEventListener('DOMContentLoaded', () => {
+      loadData();
+      renderButtons();
+    });
+
+    function loadData() {
+      const saved = localStorage.getItem('homeAloneQuest');
+      if (saved) {
+        Object.assign(gameData, JSON.parse(saved));
+        updateGame5Status();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('homeAloneQuest', JSON.stringify(gameData));
+    }
+
+    // ==========================
+    // ОБНОВЛЕНИЕ СТАТУСА ИГРЫ 5 (ЗАВИСИТ ОТ 2 И 4)
+    // ==========================
+    function updateGame5Status() {
+      if (gameData.game2.won && gameData.game4.won) {
+        gameData.game5.status = "inactive";
+      } else {
+        gameData.game5.status = "locked";
+      }
+    }
+
+    // ==========================
+    // ОТОБРАЖЕНИЕ КНОПОК И ПРЕВЬЮ С ИЗОБРАЖЕНИЯМИ
+    // ==========================
+    function renderButtons() {
+      sceneButtons.innerHTML = '';
+      
+      games.forEach(game => {
+        const btn = document.createElement('button');
+        
+        if (game.id === "game5" && gameData.game5.status === "locked") {
+          btn.className = "btn inactive";
+          btn.innerHTML = `<span>🔒</span> ${game.title} (Locked)`;
+          btn.disabled = true;
+        } else {
+          const status = gameData[game.id].won ? "completed" : "active";
+          btn.className = `btn ${status}`;
+          btn.innerHTML = `<span>${game.icon}</span> ${game.title}`;
+          if (gameData[game.id].won) {
+            btn.disabled = true;
+          } else {
+            btn.addEventListener('click', () => openGame(game));
+          }
+        }
+        
+        // >>>>>>>>>>>>>> НАВЕДЕНИЕ: ПОКАЗЫВАЕМ ПРЕВЬЮ ИЗОБРАЖЕНИЕ И ОПИСАНИЕ <<<<<<<<<<<<
+        btn.addEventListener('mouseenter', () => {
+          previewTitle.textContent = game.title;
+          previewDesc.textContent = game.desc;
+          // Заменяем фон превью на изображение из папки images/
+          if (game.previewImage) {
+            scenePreview.style.backgroundImage = `url('${game.previewImage}')`;
+            scenePreview.style.backgroundSize = 'cover';
+            scenePreview.style.backgroundPosition = 'center';
+            scenePreview.style.color = 'white';
+            scenePreview.style.textShadow = '1px 1px 2px black';
+          } else {
+            scenePreview.style.background = 'rgba(0, 0, 0, 0.88)';
+          }
+          scenePreview.classList.add('show');
+        });
+        
+        btn.addEventListener('mouseleave', () => {
+          scenePreview.classList.remove('show');
+        });
+        
+        sceneButtons.appendChild(btn);
+      });
+      
+      // Кнопка "I Want My Mom!" — всегда активна
+      const hysteria = document.createElement('button');
+      hysteria.className = 'btn hysteria';
+      hysteria.innerHTML = '😭 I WANT MY MOM!';
+      hysteria.addEventListener('click', () => showEnding("neutral"));
+      sceneButtons.appendChild(hysteria);
+    }
+
+    // ==========================
+    // ОТКРЫТИЕ ИГРЫ В IFRAME
+    // ==========================
+    function openGame(game) {
+      currentGame = game;
+      modalTitle.textContent = game.title;
+      gameIframe.src = game.gamePath;
+      gameModal.style.display = 'flex';
+    }
+
+    // Закрытие модального окна
+    document.getElementById('close-modal').addEventListener('click', () => {
+      gameModal.style.display = 'none';
+      gameIframe.src = '';
+    });
+
+    // ==========================
+    // ОБРАБОТКА СООБЩЕНИЙ ОТ ИГР (win/lose)
+    // ==========================
+    window.addEventListener('message', (event) => {
+      // Принимаем только сообщения от дочерних фреймов
+      if (event.data.game && event.data.result) {
+        const gameId = event.data.game;
+        const won = event.data.result === 'win';
+        
+        // Сохраняем результат
+        gameData[gameId].won = won;
+        gameData[gameId].status = won ? "won" : "lost";
+        
+        // Логика финальной битвы
+        if (gameId === "game5") {
+          if (won) {
+            showEnding("good");
+          } else {
+            showEnding("bad");
+          }
+          gameData.ending_shown = true;
+        } else {
+          // Обновляем статус игры 5
+          updateGame5Status();
+          gameModal.style.display = 'none';
+          gameIframe.src = '';
+          renderButtons(); // обновляем интерфейс
+        }
+        
+        saveData();
+      }
+    });
+
+    // ==========================
+    // ПОКАЗ ЭКРАНА ЗАВЕРШЕНИЯ
+    // ==========================
+    function showEnding(type) {
+      document.getElementById('main-screen').style.display = 'none';
+      document.getElementById(`${type}-ending`).style.display = 'flex';
+      gameData.ending_shown = true;
+      saveData();
+    }
+
+    // ==========================
+    // СБРОС ИГРЫ
+    // ==========================
+    ['good', 'bad', 'neutral'].forEach(type => {
+      document.getElementById(`restart-${type}`).addEventListener('click', () => {
+        localStorage.removeItem('homeAloneQuest');
+        location.reload();
+      });
+    });
+  </script>
+</body>
+</html>
+
+
+
